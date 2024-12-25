@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرر نصوص بسيط</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #d5f4ffdf;
+            color: #000000;
+        }
+
+        .editor-container {
+            width: 100%;
+            max-width: 1000px;
+            background: #64c7a7df;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 40px 15px rgba(0, 90, 90, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar button, .toolbar select, .toolbar input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 80px;
+            background: #ffffff;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            transition: 0.3s ease-in-out;
+        }
+
+        .toolbar button:hover, .toolbar select:hover, .toolbar input:hover {
+            background: #ff000a;
+            color: #ffffff;
+        }
+
+        .editor {
+            border: 1px solid #ff000a;
+            min-height: 350px;
+            padding: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+            direction: rtl;
+            outline: none;
+            background-color: #fff;
+            resize: vertical;
+        }
+
+        .editor:focus {
+            border-color: #aaa;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 8px;
+        }
+
+        .action-buttons button, .action-buttons a {
+            padding: 8px 10px;
+            font-size: 15px;
+            border: none;
+            border-radius: 80px;
+            background: none;
+            text-decoration: none;
+            color: #000;
+            cursor: pointer;
+            transition: 0.3s ease-in-out;
+        }
+
+        .action-buttons button:hover, .action-buttons a:hover {
+            background: #ff1f00;
+            color: #fff;
+        }
+
+        .stats {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 10px;
+            color: #555;
+        }
+
+        .font-size-display {
+            margin-right: 10px;
+            font-size: 16px;
+            color: #1100ff;
+        }
+        .developer-link {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .developer-link a {
+            text-decoration: none;
+            color: #fff;
+            background-color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: 0.3s ease-in-out;
+        }
+
+        .developer-link a:hover {
+            background-color: #ff1f00;
+        }        
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="toolbar">
+            <select id="font-select">
+                <option value="Arial">Arial</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Courier New">Courier New</option>
+            </select>
+            <button onclick="alignText('right')"><i class="fas fa-align-right"></i></button>
+            <button onclick="alignText('center')"><i class="fas fa-align-center"></i></button>
+            <button onclick="alignText('left')"><i class="fas fa-align-left"></i></button>
+            <button onclick="changeFontSize('increase')"><i class="fas fa-plus"></i></button>
+            <button onclick="changeFontSize('decrease')"><i class="fas fa-minus"></i></button>
+            <span class="font-size-display">حجم الخط: <span id="font-size-display">16</span>px</span>
+            <input type="color" id="text-color" title="لون النص" onchange="changeTextColor(this.value)">
+            <input type="color" id="bg-color" title="لون الخلفية" onchange="changeBackgroundColor(this.value)">
+            <button onclick="toggleDirection()"><i class="fas fa-exchange-alt"></i></button>
+        </div>
+        <div class="editor" contenteditable="true">
+ قم بمسح هذا النص من خلال الزر اسفل هذه الورقة ، وابدأ بكتابة ماتريده ، ملاحظة التنزيل لا يدعم النصوص العربية 
+        </div>
+        <div class="stats">
+            الكلمات: <span id="word-count">0</span> | الحروف: <span id="char-count">0</span>
+        </div>
+        <div class="action-buttons">
+            <button onclick="copyAllText()"><i class="fas fa-copy"></i> نسخ</button>
+            <button onclick="clearText()"><i class="fas fa-trash-alt"></i> مسح</button>
+            <button onclick="restoreText()"><i class="fas fa-undo"></i> استرجاع</button>
+            <a href="https://t.me/nnnmmm200/18" target="_self"><i class="fas fa-link"></i> الشرح</a>
+            <!-- زر تحميل PDF -->
+            <button onclick="downloadPDF()"><i class="fas fa-file-pdf"></i>تنزيل</button>
+            <!-- زر الطباعة -->
+            <button onclick="printPage()"><i class="fas fa-print"></i> طباعة</button>
+        </div>
+        <div class="developer-link">
+            <a href="https://www.ali-altaee.free.nf" target="_blank">🖥 المطور 🖥</a>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.querySelector('.editor');
+        const fontSelect = document.getElementById('font-select');
+        const fontSizeDisplay = document.getElementById('font-size-display');
+        let savedText = '';
+        let fontSize = 16;
+
+        editor.addEventListener('input', updateStats);
+
+        fontSelect.addEventListener('change', () => {
+            editor.style.fontFamily = fontSelect.value;
+        });
+
+        function changeBackgroundColor(color) {
+            editor.style.backgroundColor = color;
+        }
+
+        function changeTextColor(color) {
+            editor.style.color = color;
+        }
+
+        function toggleDirection() {
+            editor.style.direction = editor.style.direction === 'rtl' ? 'ltr' : 'rtl';
+        }
+
+        function changeFontSize(action) {
+            if (action === 'increase' && fontSize < 80) fontSize += 2;
+            else if (action === 'decrease' && fontSize > 2) fontSize -= 2;
+            editor.style.fontSize = fontSize + 'px';
+            fontSizeDisplay.textContent = fontSize;
+        }
+
+        function copyAllText() {
+            navigator.clipboard.writeText(editor.innerText);
+        }
+
+        function clearText() {
+            savedText = editor.innerHTML;
+            editor.innerHTML = '';
+            updateStats();
+            localStorage.removeItem('editorContent'); // حذف النصوص من التخزين المحلي
+        }
+
+        function restoreText() {
+            editor.innerHTML = savedText;
+            updateStats();
+        }
+
+        function updateStats() {
+            const text = editor.innerText.trim();
+            document.getElementById('word-count').textContent = text.split(/\s+/).filter(Boolean).length;
+            document.getElementById('char-count').textContent = text.length;
+        }
+
+        // حفظ النص في LocalStorage عند الكتابة
+        editor.addEventListener('input', () => {
+            localStorage.setItem('editorContent', editor.innerHTML);
+        });
+
+        // استرجاع النص المحفوظ عند فتح الصفحة
+        window.addEventListener('load', () => {
+            const savedContent = localStorage.getItem('editorContent');
+            if (savedContent) {
+                editor.innerHTML = savedContent;
+            }
+            updateStats();
+        });
+
+        // دالة تحميل النصوص بصيغة PDF
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(editor.innerText, 10, 10);
+            doc.save('document.pdf');
+        }
+
+        // دالة طباعة الصفحة
+        function printPage() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
